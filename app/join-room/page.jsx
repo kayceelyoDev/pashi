@@ -79,7 +79,7 @@ export default function JoinRoom() {
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Enter room code (e.g., D0H3B)"
-          className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
+          className="w-full p-3 border text-black border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
         />
 
         {/* Error Message */}
