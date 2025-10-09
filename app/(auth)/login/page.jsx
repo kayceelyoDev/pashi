@@ -36,7 +36,7 @@ async function signIn() {
     email,
     options: {
       // Change this to your create-room route
-      emailRedirectTo: `${window.location.origin}/create-room`,
+      emailRedirectTo: `https://pashi-wddr-dvisz49kd-kayceelyos-projects.vercel.app/create-room`,
     },
   });
 
