@@ -1,102 +1,134 @@
+"use client";
+import { useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-export default function Home() {
+export default function LandingPage() {
+  const router = useRouter();
+
+  // Refs for smooth scrolling
+  const homeRef = useRef<HTMLDivElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const stepsRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (ref: any) => {
+    ref.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="font-sans">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 w-full bg-white shadow-md z-50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between p-4 md:p-6">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollToSection(homeRef)}>
+            {/* Logo Placeholder */}
+          
+               <Image
+            src="/logo1.png"
+            alt="PASAHI Logo"
+            width={100} height={100} // or "cover" depending on how you want it to fit
+          />
+           
+           
+          </div>
+          <div className="hidden md:flex items-center gap-6">
+            <button className="text-gray-700 hover:text-gray-900 transition" onClick={() => scrollToSection(homeRef)}>Home</button>
+            <button className="text-gray-700 hover:text-gray-900 transition" onClick={() => scrollToSection(aboutRef)}>About</button>
+            <button className="text-gray-700 hover:text-gray-900 transition" onClick={() => scrollToSection(stepsRef)}>How it Works</button>
+            <button className="text-gray-700 hover:text-gray-900 transition" onClick={() => scrollToSection(contactRef)}>Contact</button>
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+              onClick={() => router.push("/create-room")}
+            >
+              Transfer Files
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+      </nav>
+
+      {/* Hero Section */}
+      <section ref={homeRef} className="min-h-screen flex flex-col justify-center items-center bg-gray-50 pt-20 px-4 text-center md:text-left md:px-20">
+        <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-4">Fast & Secure File Transfers</h1>
+        <p className="text-gray-600 text-lg md:text-xl max-w-2xl mb-6">
+          Transfer files instantly with minimal setup. No accounts needed, just create a room and start sharing.
+        </p>
+        <div className="flex gap-4 flex-col sm:flex-row justify-center">
+          <button
+            onClick={() => router.push("/create-room")}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+          >
+            Transfer Files
+          </button>
+          <button
+            onClick={() => scrollToSection(aboutRef)}
+            className="border border-gray-300 px-6 py-3 text-gray-500 rounded-lg hover:bg-gray-100 transition font-medium"
+          >
+            Learn More
+          </button>
+        </div>
+        {/* Placeholder for hero image */}
+        <div className="mt-20 w-full max-w-xl h-20  rounded-xl relative">
           <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+            src="/logo1.png"
+            alt="PASAHI Logo"
+            fill
+            style={{ objectFit: "contain" }} // or "cover" depending on how you want it to fit
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section ref={aboutRef} className="py-20 px-4 md:px-20 bg-white">
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 text-center md:text-left">About the App</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          <div className="space-y-4">
+            <p className="text-gray-600 text-lg">
+              Our app allows you to transfer files seamlessly between peers without creating an account. It's secure, fast, and simple.
+            </p>
+            <p className="text-gray-600 text-lg">
+              Perfect for teams, friends, or personal use. You just create a room, share the code, and start transferring files immediately.
+            </p>
+          </div>
+          {/* Placeholder for about image */}
+          <div className="w-full h-120  rounded-xl relative">
+            <Image
+            src="/image2.png"
+            alt="image1"
+           fill
+            style={{ objectFit: "contain" }} // or "cover" depending on how you want it to fit
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Steps / How it Works */}
+      <section ref={stepsRef} className="py-20 px-4 md:px-20 bg-gray-50">
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-12 text-center">How it Works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto flex items-center justify-center text-blue-600 font-bold text-xl">1</div>
+            <h3 className="font-semibold text-gray-800">Create a Room</h3>
+            <p className="text-gray-600">Generate a unique room code to start a secure session for file sharing.</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-purple-100 rounded-full mx-auto flex items-center justify-center text-purple-600 font-bold text-xl">2</div>
+            <h3 className="font-semibold text-gray-800">Share the Code</h3>
+            <p className="text-gray-600">Send the room code to your peer so they can join and start transferring files.</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center text-green-600 font-bold text-xl">3</div>
+            <h3 className="font-semibold text-gray-800">Transfer Files</h3>
+            <p className="text-gray-600">Upload and download files instantly with real-time progress updates.</p>
+          </div>
+        </div>
+      </section>
+
+      
+
+      {/* Footer */}
+      <footer className="py-6 text-center bg-gray-50 text-gray-500">
+        &copy; {new Date().getFullYear()} FileTransferApp. All rights reserved.
       </footer>
     </div>
   );
