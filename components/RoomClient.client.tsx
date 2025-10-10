@@ -15,8 +15,8 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
-const CHUNK_SIZE = 256 * 1024; // 256 KB per chunk
 const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024; // 16 MB safe buffer
+const CHUNK_SIZE = 64 * 1024; // 64 KB per chunk
 
 type FileMeta = {
   id: string;
@@ -33,6 +33,7 @@ type SendingFile = {
   status: "queued" | "sending" | "completed" | "cancelled";
   cancel?: () => void;
 };
+
 export default function RoomClient({ roomCode }: { roomCode: string }) {
   const router = useRouter();
   const [peerId] = useState(nanoid(8));
@@ -40,17 +41,25 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   const [receivedFiles, setReceivedFiles] = useState<FileMeta[]>([]);
   const [sendingFiles, setSendingFiles] = useState<SendingFile[]>([]);
   const [preSendFiles, setPreSendFiles] = useState<File[]>([]);
+  const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<any>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
-  const incomingBuffer = useRef<{ meta?: FileMeta; chunks: ArrayBuffer[] }>({ chunks: [] });
+
+  const incomingBuffer = useRef<{
+    meta?: FileMeta;
+    receivedBytes: number;
+    streamParts: ArrayBuffer[];
+    cancelled: boolean;
+  }>({ receivedBytes: 0, streamParts: [], cancelled: false });
+
   const pendingFiles = useRef<File[]>([]);
   const isSending = useRef(false);
 
   // ----------------------------
-  // Setup Supabase channel
+  // Supabase channel setup
   // ----------------------------
   useEffect(() => {
     const channel = supabaseClient.channel(`room-${roomCode}`);
@@ -59,22 +68,25 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     channel.on("broadcast", { event: "signal" }, ({ payload }: any) => {
       if (!payload || payload.from === peerId) return;
       handleSignal(payload);
+
+      setConnectedPeers((prev) => {
+        if (!prev.includes(payload.from)) return [...prev, payload.from];
+        return prev;
+      });
     });
 
     channel.subscribe((status: string) => {
       if (status === "SUBSCRIBED") setStatus("Connected to room.");
     });
 
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => channel.unsubscribe();
   }, [roomCode, peerId]);
 
   const sendSignal = (obj: any) =>
     channelRef.current?.send({ type: "broadcast", event: "signal", payload: obj });
 
   // ----------------------------
-  // Setup DataChannel
+  // DataChannel handlers
   // ----------------------------
   const setupDataChannelHandlers = (dc: RTCDataChannel) => {
     dc.binaryType = "arraybuffer";
@@ -84,35 +96,56 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
 
     dc.onmessage = (evt) => {
       if (typeof evt.data === "string") {
-        const meta = JSON.parse(evt.data) as FileMeta;
+        const msg = JSON.parse(evt.data);
+
+        // Handle cancellation from sender
+        if (msg.type === "cancel") {
+          if (incomingBuffer.current.meta?.id === msg.fileId) {
+            incomingBuffer.current.cancelled = true;
+            setStatus(`Transfer cancelled by sender: ${incomingBuffer.current.meta.fileName}`);
+            incomingBuffer.current.meta = undefined;
+            incomingBuffer.current.receivedBytes = 0;
+            incomingBuffer.current.streamParts = [];
+          }
+          return;
+        }
+
+        // Otherwise, it's file metadata
+        const meta = msg as FileMeta;
         if (!receivedFiles.find((f) => f.id === meta.id)) {
           incomingBuffer.current.meta = meta;
-          incomingBuffer.current.chunks = [];
-        } else {
-          incomingBuffer.current.meta = undefined;
-          incomingBuffer.current.chunks = [];
+          incomingBuffer.current.receivedBytes = 0;
+          incomingBuffer.current.streamParts = [];
+          incomingBuffer.current.cancelled = false;
         }
-      } else if (incomingBuffer.current.meta) {
-        incomingBuffer.current.chunks.push(evt.data);
-        const receivedSize = incomingBuffer.current.chunks.reduce(
-          (acc, c) => acc + c.byteLength,
-          0
-        );
-        if (receivedSize >= incomingBuffer.current.meta.size) {
-          const blob = new Blob(incomingBuffer.current.chunks, {
-            type: incomingBuffer.current.meta.mime,
-          });
+      } else if (incomingBuffer.current.meta && !incomingBuffer.current.cancelled) {
+        const chunk = evt.data as ArrayBuffer;
+        incomingBuffer.current.streamParts.push(chunk);
+        incomingBuffer.current.receivedBytes += chunk.byteLength;
+
+        if (incomingBuffer.current.receivedBytes >= incomingBuffer.current.meta.size) {
+          const blob = new Blob(incomingBuffer.current.streamParts, { type: incomingBuffer.current.meta.mime });
           setReceivedFiles((prev) => [...prev, { ...incomingBuffer.current.meta!, blob }]);
           setStatus(`Received ${incomingBuffer.current.meta.fileName}`);
           incomingBuffer.current.meta = undefined;
-          incomingBuffer.current.chunks = [];
+          incomingBuffer.current.receivedBytes = 0;
+          incomingBuffer.current.streamParts = [];
+        } else {
+          if (incomingBuffer.current.receivedBytes % (5 * 1024 * 1024) < chunk.byteLength) {
+            setStatus(
+              `Receiving ${incomingBuffer.current.meta.fileName} (${(
+                (incomingBuffer.current.receivedBytes / incomingBuffer.current.meta.size) *
+                100
+              ).toFixed(1)}%)`
+            );
+          }
         }
       }
     };
   };
 
   // ----------------------------
-  // Setup PeerConnection
+  // PeerConnection setup
   // ----------------------------
   const setupConnection = (isInitiator = false) => {
     if (pcRef.current) return;
@@ -173,7 +206,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   };
 
   // ----------------------------
-  // File Icon
+  // File Icons
   // ----------------------------
   const getFileIcon = (name?: string) => {
     if (!name) return <PaperClipIcon className="w-6 h-6 text-gray-400" />;
@@ -222,7 +255,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   };
 
   // ----------------------------
-  // Send files queue (multiple support)
+  // Send files queue
   // ----------------------------
   const sendFiles = () => {
     if (preSendFiles.length === 0) return;
@@ -241,7 +274,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     sendFile(file).finally(() => sendNextFile());
   };
 
-const sendFile = (file: File) => {
+  const sendFile = (file: File) => {
   return new Promise<void>((resolve) => {
     const dc = dcRef.current;
     if (!dc || dc.readyState !== "open") {
@@ -253,7 +286,9 @@ const sendFile = (file: File) => {
     const fileId = nanoid();
     let offset = 0;
     let sentBytes = 0;
-    const CHUNK = 128 * 1024; // 128 KB for large files
+    const CHUNK = CHUNK_SIZE;
+
+    let cancelled = false;
 
     const sendingFile: SendingFile = {
       id: fileId,
@@ -265,46 +300,42 @@ const sendFile = (file: File) => {
         sendingFile.status = "cancelled";
         setSendingFiles((prev) => [...prev]);
         setStatus(`Cancelled ${file.name}`);
+
+        // Notify receiver
+        dc.send(JSON.stringify({ type: "cancel", fileId }));
+
+        // Immediately resolve the promise so next file can start
+        resolve();
       },
     };
+
     setSendingFiles((prev) => [...prev, sendingFile]);
 
-    let cancelled = false;
-
-    // Send metadata first
-    const meta: FileMeta = {
-      id: fileId,
-      fileName: file.name,
-      mime: file.type,
-      size: file.size,
-    };
+    const meta: FileMeta = { id: fileId, fileName: file.name, mime: file.type, size: file.size };
     dc.send(JSON.stringify(meta));
 
     const reader = new FileReader();
 
     const readSlice = () => {
       if (cancelled || offset >= file.size) return;
-
       const slice = file.slice(offset, offset + CHUNK);
       reader.readAsArrayBuffer(slice);
     };
 
     reader.onload = (e) => {
       if (!e.target?.result || cancelled) return;
-
       const chunk = e.target.result as ArrayBuffer;
 
       const trySend = () => {
         if (cancelled) return;
 
         if (dc.bufferedAmount + chunk.byteLength > MAX_BUFFERED_AMOUNT) {
-          // Wait for buffered amount to decrease
           dc.onbufferedamountlow = () => {
             dc.onbufferedamountlow = null;
             trySend();
           };
         } else if (dc.readyState !== "open") {
-          setTimeout(trySend, 100);
+          setTimeout(trySend, 50);
         } else {
           dc.send(chunk);
           sentBytes += chunk.byteLength;
@@ -313,8 +344,9 @@ const sendFile = (file: File) => {
           setSendingFiles((prev) => [...prev]);
 
           offset += CHUNK;
-          if (offset < file.size) readSlice();
-          else {
+          if (offset < file.size) {
+            setTimeout(readSlice, 10);
+          } else {
             sendingFile.status = "completed";
             sendingFile.progress = 100;
             setSendingFiles((prev) => [...prev]);
@@ -332,8 +364,9 @@ const sendFile = (file: File) => {
   });
 };
 
-
-  // Add this function inside your RoomClient component
+  // ----------------------------
+  // Leave Room
+  // ----------------------------
   const leaveRoom = async () => {
     try {
       const { error } = await supabaseClient
@@ -344,43 +377,11 @@ const sendFile = (file: File) => {
       if (error) throw error;
       router.push(`/join-room`);
       setStatus("You have left the room.");
-      // Optionally, you can redirect the user back to a lobby or join page
-      // router.push("/join-room");
     } catch (err) {
       console.error(err);
       setStatus("Failed to leave the room. Try again.");
     }
   };
-
-  // Add this state near your other useState declarations
-  const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
-
-  // Inside your Supabase channel broadcast handler, update peers:
-  useEffect(() => {
-    const channel = supabaseClient.channel(`room-${roomCode}`);
-    channelRef.current = channel;
-
-    channel.on("broadcast", { event: "signal" }, ({ payload }: any) => {
-      if (!payload || payload.from === peerId) return;
-
-      handleSignal(payload);
-
-      // Add the sender to connected peers if not already there
-      setConnectedPeers((prev) => {
-        if (!prev.includes(payload.from)) return [...prev, payload.from];
-        return prev;
-      });
-    });
-
-    channel.subscribe((status: string) => {
-      if (status === "SUBSCRIBED") setStatus("Connected to room.");
-    });
-
-    return () => {
-      channel.unsubscribe();
-    };
-  }, [roomCode, peerId]);
-
   // ----------------------------
   // UI
   // ----------------------------
@@ -399,10 +400,8 @@ const sendFile = (file: File) => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center min-w-0">
           <div className="min-w-0">
             <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Room: {roomCode}</h3>
-            {/* Peer ID & Connected Peers */}
             <div className="min-w-0 mt-1">
               <p className="text-xs sm:text-sm text-gray-500 truncate">Peer ID: {peerId}</p>
-
               {connectedPeers.length > 0 && (
                 <div className="mt-2">
                   <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Connected Peers:</p>
@@ -416,7 +415,6 @@ const sendFile = (file: File) => {
                 </div>
               )}
             </div>
-
           </div>
           {status && (
             <div className="mt-2 sm:mt-0 p-2 sm:p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg shadow-sm text-center text-sm sm:text-base">
@@ -468,24 +466,21 @@ const sendFile = (file: File) => {
         {sendingFiles.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
             <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Sending Files</h4>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {sendingFiles.map((f) => (
-                <div key={f.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 min-w-0 overflow-hidden">
-                  <div className="flex-1 w-full min-w-0 overflow-hidden">
-                    <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{f.file.name}</p>
-                    <div className="h-2 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                      <div className="h-full bg-blue-500 transition-all" style={{ width: `${f.progress}%` }} />
-                    </div>
+                <div key={f.id} className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                    {getFileIcon(f.file.name)}
+                    <span className="truncate text-black">{f.file.name}</span>
                   </div>
-                  <div className="ml-0 sm:ml-4 mt-1 sm:mt-0 text-sm sm:text-base text-gray-600 text-right min-w-0">
-                    <p>{f.progress.toFixed(1)}%</p>
-                    <p>{f.status}</p>
+                  <div className="flex items-center gap-2 min-w-[120px]">
+                    <span className="text-xs text-gray-600">{Math.round(f.progress)}%</span>
+                    {f.status !== "completed" && (
+                      <button className="px-2 py-1 bg-red-500 text-white rounded-lg text-xs" onClick={() => f.cancel?.()}>
+                        Cancel
+                      </button>
+                    )}
                   </div>
-                  {f.status !== "completed" && f.status !== "cancelled" && (
-                    <button onClick={f.cancel} className="mt-2 sm:mt-0 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm">
-                      Cancel
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -497,18 +492,20 @@ const sendFile = (file: File) => {
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
             <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Received Files</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {receivedFiles.map((file) => (
-                <div key={file.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
-                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0 min-w-0 overflow-hidden">
-                    {getFileIcon(file.fileName)}
-                    <div className="flex flex-col overflow-hidden min-w-0">
-                      <span className="text-gray-800 font-medium text-sm sm:text-base truncate">{file.fileName}</span>
-                      <span className="text-gray-500 text-xs sm:text-sm truncate">{Math.round(file.size / 1024)} KB</span>
-                    </div>
+              {receivedFiles.map((f) => (
+                <div key={f.id} className="flex items-center justify-between gap-2 p-2 sm:p-3 rounded-xl border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden">
+                    {getFileIcon(f.fileName)}
+                    <span className="truncate">{f.fileName}</span>
                   </div>
-                  <button onClick={() => file.blob && saveAs(file.blob, file.fileName)} disabled={!file.blob} className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm sm:text-base">
-                    Download
-                  </button>
+                  {f.blob && (
+                    <button
+                      onClick={() => saveAs(f.blob!, f.fileName)}
+                      className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition text-xs sm:text-sm"
+                    >
+                      Download
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -516,6 +513,5 @@ const sendFile = (file: File) => {
         )}
       </div>
     </div>
-
   );
 }
