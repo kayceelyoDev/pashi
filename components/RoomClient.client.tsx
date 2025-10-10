@@ -170,20 +170,32 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
 
     const pc = new RTCPeerConnection({
       iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }, // optional STUN
-
         {
-          urls: "turn:relay1.expressturn.com:3480?transport=udp",
-          username: "000000002075470587",
-          credential: "6CxGtGAuHYsFZYZH7A2q78Yo",
+          urls: "stun:stun.relay.metered.ca:80",
         },
         {
-          urls: "turn:relay1.expressturn.com:3480?transport=tcp", // optional TCP fallback
-          username: "000000002075470587",
-          credential: "6CxGtGAuHYsFZYZH7A2q78Yo",
+          urls: "turn:standard.relay.metered.ca:80",
+          username: "158b5b4008675d9b88b4ba97",
+          credential: "plP3KoFPyI4pLx7e",
+        },
+        {
+          urls: "turn:standard.relay.metered.ca:80?transport=tcp",
+          username: "158b5b4008675d9b88b4ba97",
+          credential: "plP3KoFPyI4pLx7e",
+        },
+        {
+          urls: "turn:standard.relay.metered.ca:443",
+          username: "158b5b4008675d9b88b4ba97",
+          credential: "plP3KoFPyI4pLx7e",
+        },
+        {
+          urls: "turns:standard.relay.metered.ca:443?transport=tcp",
+          username: "158b5b4008675d9b88b4ba97",
+          credential: "plP3KoFPyI4pLx7e",
         },
       ],
     });
+
 
     pcRef.current = pc;
 
