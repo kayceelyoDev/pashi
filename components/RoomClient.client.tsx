@@ -347,124 +347,170 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     }
   };
 
+  // Add this state near your other useState declarations
+  const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
+
+  // Inside your Supabase channel broadcast handler, update peers:
+  useEffect(() => {
+    const channel = supabaseClient.channel(`room-${roomCode}`);
+    channelRef.current = channel;
+
+    channel.on("broadcast", { event: "signal" }, ({ payload }: any) => {
+      if (!payload || payload.from === peerId) return;
+
+      handleSignal(payload);
+
+      // Add the sender to connected peers if not already there
+      setConnectedPeers((prev) => {
+        if (!prev.includes(payload.from)) return [...prev, payload.from];
+        return prev;
+      });
+    });
+
+    channel.subscribe((status: string) => {
+      if (status === "SUBSCRIBED") setStatus("Connected to room.");
+    });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [roomCode, peerId]);
+
   // ----------------------------
   // UI
   // ----------------------------
   return (
-<div className="w-full min-h-screen flex flex-col bg-gray-100 p-4 sm:p-6 overflow-y-auto">
-  {/* Reminder Banner */}
-  <div className="w-full max-w-4xl mx-auto bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 rounded-lg p-4 shadow-md mb-6 space-y-2 text-sm sm:text-base flex-shrink-0">
-    <p className="font-medium">Please do not refresh the page while in the room; it may disrupt file transfers or connections.</p>
-    <p className="font-medium">Always click "Leave Room" when finished to make the room available for others.</p>
-    <p className="font-medium">Avoid opening multiple tabs with the same room to prevent connection conflicts.</p>
-    <p className="font-medium">Ensure all file transfers are complete before leaving the room to prevent data loss.</p>
-  </div>
-
-  {/* Header & Controls */}
-  <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center min-w-0">
-      <div className="min-w-0">
-        <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Room: {roomCode}</h3>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">Peer ID: {peerId}</p>
+    <div className="w-full min-h-screen flex flex-col bg-gray-100 p-4 sm:p-6 overflow-y-auto">
+      {/* Reminder Banner */}
+      <div className="w-full max-w-4xl mx-auto bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 rounded-lg p-4 shadow-md mb-6 space-y-2 text-sm sm:text-base flex-shrink-0">
+        <p className="font-medium">Please do not refresh the page while in the room; it may disrupt file transfers or connections.</p>
+        <p className="font-medium">Always click "Leave Room" when finished to make the room available for others.</p>
+        <p className="font-medium">Avoid opening multiple tabs with the same room to prevent connection conflicts.</p>
+        <p className="font-medium">Ensure all file transfers are complete before leaving the room to prevent data loss.</p>
       </div>
-      {status && (
-        <div className="mt-2 sm:mt-0 p-2 sm:p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg shadow-sm text-center text-sm sm:text-base">
-          {status}
-        </div>
-      )}
-    </div>
 
-    <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
-      <button onClick={announce} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition font-medium text-sm sm:text-base">Announce / Connect</button>
+      {/* Header & Controls */}
+      <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center min-w-0">
+          <div className="min-w-0">
+            <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Room: {roomCode}</h3>
+            {/* Peer ID & Connected Peers */}
+            <div className="min-w-0 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Peer ID: {peerId}</p>
 
-      <label className="flex-1 sm:flex-none flex items-center justify-center text-gray-800 gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition font-medium text-sm sm:text-base">
-        Select Files
-        <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFilesToQueue(e.target.files)} />
-      </label>
-
-      <button onClick={sendFiles} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition font-medium text-sm sm:text-base">Send Files</button>
-
-      <button onClick={leaveRoom} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition font-medium text-sm sm:text-base">Leave Room</button>
-    </div>
-  </div>
-
-  {/* File Sections */}
-  <div className="flex flex-col mt-4 max-w-4xl mx-auto w-full space-y-4 flex-1">
-    {/* Pre-send Files */}
-    {preSendFiles.length > 0 && (
-      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
-        <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Files Ready to Send</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {preSendFiles.map((file, idx) => (
-            <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-xl border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0 min-w-0 overflow-hidden">
-                {getFileIcon(file.name)}
-                <div className="flex flex-col overflow-hidden min-w-0">
-                  <span className="font-medium text-gray-800 text-sm sm:text-base truncate">{file.name}</span>
-                  <span className="text-gray-500 text-xs sm:text-sm truncate">{Math.round(file.size / 1024)} KB</span>
+              {connectedPeers.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Connected Peers:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {connectedPeers.map((peer) => (
+                      <span key={peer} className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm truncate">
+                        {peer}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <button className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs sm:text-sm" onClick={() => removeFromQueue(idx)}>
-                <TrashIcon className="w-4 h-4" /> Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
-
-    {/* Sending Files */}
-    {sendingFiles.length > 0 && (
-      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
-        <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Sending Files</h4>
-        <div className="space-y-2">
-          {sendingFiles.map((f) => (
-            <div key={f.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 min-w-0 overflow-hidden">
-              <div className="flex-1 w-full min-w-0 overflow-hidden">
-                <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{f.file.name}</p>
-                <div className="h-2 bg-gray-200 rounded-full mt-1 overflow-hidden">
-                  <div className="h-full bg-blue-500 transition-all" style={{ width: `${f.progress}%` }} />
-                </div>
-              </div>
-              <div className="ml-0 sm:ml-4 mt-1 sm:mt-0 text-sm sm:text-base text-gray-600 text-right min-w-0">
-                <p>{f.progress.toFixed(1)}%</p>
-                <p>{f.status}</p>
-              </div>
-              {f.status !== "completed" && f.status !== "cancelled" && (
-                <button onClick={f.cancel} className="mt-2 sm:mt-0 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm">
-                  Cancel
-                </button>
               )}
             </div>
-          ))}
-        </div>
-      </div>
-    )}
 
-    {/* Received Files */}
-    {receivedFiles.length > 0 && (
-      <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
-        <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Received Files</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {receivedFiles.map((file) => (
-            <div key={file.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0 min-w-0 overflow-hidden">
-                {getFileIcon(file.fileName)}
-                <div className="flex flex-col overflow-hidden min-w-0">
-                  <span className="text-gray-800 font-medium text-sm sm:text-base truncate">{file.fileName}</span>
-                  <span className="text-gray-500 text-xs sm:text-sm truncate">{Math.round(file.size / 1024)} KB</span>
-                </div>
-              </div>
-              <button onClick={() => file.blob && saveAs(file.blob, file.fileName)} disabled={!file.blob} className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm sm:text-base">
-                Download
-              </button>
+          </div>
+          {status && (
+            <div className="mt-2 sm:mt-0 p-2 sm:p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg shadow-sm text-center text-sm sm:text-base">
+              {status}
             </div>
-          ))}
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
+          <button onClick={announce} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition font-medium text-sm sm:text-base">Announce / Connect</button>
+
+          <label className="flex-1 sm:flex-none flex items-center justify-center text-gray-800 gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition font-medium text-sm sm:text-base">
+            Select Files
+            <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFilesToQueue(e.target.files)} />
+          </label>
+
+          <button onClick={sendFiles} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition font-medium text-sm sm:text-base">Send Files</button>
+
+          <button onClick={leaveRoom} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition font-medium text-sm sm:text-base">Leave Room</button>
         </div>
       </div>
-    )}
-  </div>
-</div>
+
+      {/* File Sections */}
+      <div className="flex flex-col mt-4 max-w-4xl mx-auto w-full space-y-4 flex-1">
+        {/* Pre-send Files */}
+        {preSendFiles.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
+            <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Files Ready to Send</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {preSendFiles.map((file, idx) => (
+                <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-xl border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0 min-w-0 overflow-hidden">
+                    {getFileIcon(file.name)}
+                    <div className="flex flex-col overflow-hidden min-w-0">
+                      <span className="font-medium text-gray-800 text-sm sm:text-base truncate">{file.name}</span>
+                      <span className="text-gray-500 text-xs sm:text-sm truncate">{Math.round(file.size / 1024)} KB</span>
+                    </div>
+                  </div>
+                  <button className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-xs sm:text-sm" onClick={() => removeFromQueue(idx)}>
+                    <TrashIcon className="w-4 h-4" /> Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sending Files */}
+        {sendingFiles.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
+            <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Sending Files</h4>
+            <div className="space-y-2">
+              {sendingFiles.map((f) => (
+                <div key={f.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 min-w-0 overflow-hidden">
+                  <div className="flex-1 w-full min-w-0 overflow-hidden">
+                    <p className="font-medium text-gray-800 text-sm sm:text-base truncate">{f.file.name}</p>
+                    <div className="h-2 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                      <div className="h-full bg-blue-500 transition-all" style={{ width: `${f.progress}%` }} />
+                    </div>
+                  </div>
+                  <div className="ml-0 sm:ml-4 mt-1 sm:mt-0 text-sm sm:text-base text-gray-600 text-right min-w-0">
+                    <p>{f.progress.toFixed(1)}%</p>
+                    <p>{f.status}</p>
+                  </div>
+                  {f.status !== "completed" && f.status !== "cancelled" && (
+                    <button onClick={f.cancel} className="mt-2 sm:mt-0 px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Received Files */}
+        {receivedFiles.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
+            <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Received Files</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {receivedFiles.map((file) => (
+                <div key={file.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0 min-w-0 overflow-hidden">
+                    {getFileIcon(file.fileName)}
+                    <div className="flex flex-col overflow-hidden min-w-0">
+                      <span className="text-gray-800 font-medium text-sm sm:text-base truncate">{file.fileName}</span>
+                      <span className="text-gray-500 text-xs sm:text-sm truncate">{Math.round(file.size / 1024)} KB</span>
+                    </div>
+                  </div>
+                  <button onClick={() => file.blob && saveAs(file.blob, file.fileName)} disabled={!file.blob} className="px-4 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm sm:text-base">
+                    Download
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
 
   );
 }
