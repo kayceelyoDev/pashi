@@ -241,92 +241,97 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     sendFile(file).finally(() => sendNextFile());
   };
 
-  const sendFile = (file: File) => {
-    return new Promise<void>((resolve) => {
-      const dc = dcRef.current;
-      if (!dc || dc.readyState !== "open") {
-        alert("Connection not ready.");
-        resolve();
-        return;
-      }
+const sendFile = (file: File) => {
+  return new Promise<void>((resolve) => {
+    const dc = dcRef.current;
+    if (!dc || dc.readyState !== "open") {
+      alert("Connection not ready.");
+      resolve();
+      return;
+    }
 
-      const fileId = nanoid();
-      let cancelled = false;
-      let offset = 0;
-      let sentBytes = 0;
+    const fileId = nanoid();
+    let offset = 0;
+    let sentBytes = 0;
+    const CHUNK = 128 * 1024; // 128 KB for large files
 
-      const sendingFile: SendingFile = {
-        id: fileId,
-        file,
-        progress: 0,
-        status: "queued",
-        cancel: () => {
-          cancelled = true;
-          sendingFile.status = "cancelled";
+    const sendingFile: SendingFile = {
+      id: fileId,
+      file,
+      progress: 0,
+      status: "queued",
+      cancel: () => {
+        cancelled = true;
+        sendingFile.status = "cancelled";
+        setSendingFiles((prev) => [...prev]);
+        setStatus(`Cancelled ${file.name}`);
+      },
+    };
+    setSendingFiles((prev) => [...prev, sendingFile]);
+
+    let cancelled = false;
+
+    // Send metadata first
+    const meta: FileMeta = {
+      id: fileId,
+      fileName: file.name,
+      mime: file.type,
+      size: file.size,
+    };
+    dc.send(JSON.stringify(meta));
+
+    const reader = new FileReader();
+
+    const readSlice = () => {
+      if (cancelled || offset >= file.size) return;
+
+      const slice = file.slice(offset, offset + CHUNK);
+      reader.readAsArrayBuffer(slice);
+    };
+
+    reader.onload = (e) => {
+      if (!e.target?.result || cancelled) return;
+
+      const chunk = e.target.result as ArrayBuffer;
+
+      const trySend = () => {
+        if (cancelled) return;
+
+        if (dc.bufferedAmount + chunk.byteLength > MAX_BUFFERED_AMOUNT) {
+          // Wait for buffered amount to decrease
+          dc.onbufferedamountlow = () => {
+            dc.onbufferedamountlow = null;
+            trySend();
+          };
+        } else if (dc.readyState !== "open") {
+          setTimeout(trySend, 100);
+        } else {
+          dc.send(chunk);
+          sentBytes += chunk.byteLength;
+          sendingFile.progress = Math.min(100, (sentBytes / file.size) * 100);
+          sendingFile.status = "sending";
           setSendingFiles((prev) => [...prev]);
-          setStatus(`Cancelled ${file.name}`);
-        },
-      };
-      setSendingFiles((prev) => [...prev, sendingFile]);
 
-      dc.bufferedAmountLowThreshold = MAX_BUFFERED_AMOUNT / 2;
-
-      const reader = new FileReader();
-
-      const readSlice = () => {
-        if (cancelled || offset >= file.size) return;
-        const slice = file.slice(offset, offset + CHUNK_SIZE);
-        reader.readAsArrayBuffer(slice);
-      };
-
-      reader.onload = (e) => {
-        if (!e.target?.result || cancelled) return;
-
-        const chunk = e.target.result as ArrayBuffer;
-
-        const trySend = () => {
-          if (cancelled) return;
-
-          if (dc.bufferedAmount + chunk.byteLength > MAX_BUFFERED_AMOUNT) {
-            dc.onbufferedamountlow = () => {
-              dc.onbufferedamountlow = null;
-              trySend();
-            };
-          } else if (dc.readyState !== "open") {
-            setTimeout(trySend, 100);
-          } else {
-            dc.send(chunk);
-            sentBytes += chunk.byteLength;
-            sendingFile.progress = Math.min(100, (sentBytes / file.size) * 100);
-            sendingFile.status = "sending";
+          offset += CHUNK;
+          if (offset < file.size) readSlice();
+          else {
+            sendingFile.status = "completed";
+            sendingFile.progress = 100;
             setSendingFiles((prev) => [...prev]);
-
-            offset += CHUNK_SIZE;
-            if (offset < file.size) readSlice();
-            else {
-              sendingFile.status = "completed";
-              sendingFile.progress = 100;
-              setSendingFiles((prev) => [...prev]);
-              setStatus(`Finished sending ${file.name}`);
-              resolve();
-            }
+            setStatus(`Finished sending ${file.name}`);
+            resolve();
           }
-        };
-
-        trySend();
+        }
       };
 
-      // Send metadata first
-      const meta: FileMeta = {
-        id: fileId, fileName: file.name, mime: file.type, size: file.size,
+      trySend();
+    };
 
-      };
-      dc.send(JSON.stringify(meta));
+    readSlice();
+    setStatus(`Sending ${file.name}...`);
+  });
+};
 
-      readSlice();
-      setStatus(`Sending ${file.name}...`);
-    });
-  };
 
   // Add this function inside your RoomClient component
   const leaveRoom = async () => {
