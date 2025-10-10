@@ -485,7 +485,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
                 <div key={f.id} className="flex items-center justify-between gap-2 p-2 sm:p-3 rounded-xl border bg-gray-50 hover:bg-gray-100 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 overflow-hidden">
                     {getFileIcon(f.fileName)}
-                    <span className="truncate">{f.fileName}</span>
+                    <span className="truncate text-gray-700">{f.fileName}</span>
                   </div>
                   {f.blob && (
                     <button
