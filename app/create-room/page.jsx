@@ -51,7 +51,7 @@ export default function CreateRoom() {
           Welcome to PASAHI
         </h1>
         <p className="text-gray-500 text-center sm:text-lg">
-          Easily transfer files securely. Create a new room or join an existing one.
+          Easily transfer files securely. Create a new drop zone or join an existing one.
         </p>
 
         {/* Status Message */}
@@ -68,22 +68,22 @@ export default function CreateRoom() {
             disabled={loading}
             className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {loading ? "Creating Room..." : "Create Room"}
+            {loading ? "Creating Room..." : "Create drop zone"}
           </button>
 
           <button
             onClick={() => router.push("/join-room")}
             className="flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl shadow hover:bg-gray-300 transition"
           >
-            Join Room
+            Join drop zone
           </button>
         </div>
 
         {/* Reminders */}
         <div className="mt-6 text-gray-500 text-sm sm:text-base space-y-2">
-          <p>• Do not refresh the page while in a room.</p>
-          <p>• Always leave the room after use.</p>
-          <p>• Only one user can occupy a new room initially.</p>
+          <p>• Do not refresh the page while in a drop zone.</p>
+          <p>• Always leave the drop zone after use.</p>
+          <p>• Only one user can occupy a new drop zone initially.</p>
         </div>
 
        

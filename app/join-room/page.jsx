@@ -67,10 +67,10 @@ export default function JoinRoom() {
 
         {/* Heading */}
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 text-center">
-          Join an Existing Room
+          Join an Drop Zone
         </h1>
         <p className="text-gray-500 text-center sm:text-lg">
-          Enter your room code to connect and transfer files securely.
+          Enter your drop zone code to connect and transfer files securely.
         </p>
 
         {/* Input */}
@@ -96,22 +96,22 @@ export default function JoinRoom() {
             disabled={loading}
             className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {loading ? "Checking..." : "Join Room"}
+            {loading ? "Checking..." : "Join Drop Zone"}
           </button>
 
           <button
             onClick={() => router.push("/create-room")}
             className="flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl shadow hover:bg-gray-300 transition"
           >
-            Create New Room
+            Create New Drop Zone
           </button>
         </div>
 
         {/* Reminders */}
         <div className="mt-6 text-gray-500 text-sm sm:text-base space-y-2">
-          <p>• Make sure the room code is correct.</p>
-          <p>• Only one user can join a room at a time.</p>
-          <p>• Always leave the room after finishing your session.</p>
+          <p>• Make sure the drop zone code is correct.</p>
+          <p>• Only one user can join a drop zone at a time.</p>
+          <p>• Always leave the drop zone after finishing your session.</p>
         </div>
 
         

@@ -16,7 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024; // 16 MB
-const CHUNK_SIZE = 64 * 1024; // 64 KB
+const CHUNK_SIZE = 256 * 1024; // 256 KB chunks to prevent mobile crash
 
 type FileMeta = {
   id: string;
@@ -48,7 +48,12 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dcRef = useRef<RTCDataChannel | null>(null);
 
-  const incomingBuffer = useRef<{ meta?: FileMeta; receivedBytes: number; streamParts: ArrayBuffer[] }>({ receivedBytes: 0, streamParts: [] });
+  const incomingBuffer = useRef<{
+    meta?: FileMeta;
+    receivedBytes: number;
+    streamParts: Blob[];
+  }>({ receivedBytes: 0, streamParts: [] });
+
   const pendingFiles = useRef<File[]>([]);
   const isSending = useRef(false);
 
@@ -59,13 +64,9 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     const channel = supabaseClient.channel(`room-${roomCode}`);
     channelRef.current = channel;
 
-    // Real-time peer join/leave events
     channel.on("broadcast", { event: "peer-joined" }, ({ payload }: any) => {
       if (!payload || payload.peerId === peerId) return;
-      setConnectedPeers((prev) => {
-        if (!prev.includes(payload.peerId)) return [...prev, payload.peerId];
-        return prev;
-      });
+      setConnectedPeers((prev) => (prev.includes(payload.peerId) ? prev : [...prev, payload.peerId]));
     });
 
     channel.on("broadcast", { event: "peer-left" }, ({ payload }: any) => {
@@ -73,13 +74,11 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       setConnectedPeers((prev) => prev.filter((p) => p !== payload.peerId));
     });
 
-    // Receive signals
     channel.on("broadcast", { event: "signal" }, ({ payload }: any) => {
       if (!payload || payload.from === peerId) return;
       handleSignal(payload);
     });
 
-    // Receive file cancel broadcasts
     channel.on("broadcast", { event: "file-cancel" }, ({ payload }: any) => {
       if (!payload || payload.from === peerId) return;
       handleRemoteFileCancel(payload.fileId);
@@ -98,7 +97,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     };
   }, [roomCode, peerId]);
 
-  // Auto-connect when 2 peers
+  // Auto-connect when peers exist
   useEffect(() => {
     if (connectedPeers.length >= 1 && !pcRef.current) {
       setupConnection(true);
@@ -120,7 +119,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       (f) => f.name !== sendingFiles.find((sf) => sf.id === fileId)?.file.name
     );
     setStatus(`File transfer cancelled by peer.`);
-    sendNextFile(); // <-- automatically start next file
+    sendNextFile();
   };
 
   // ----------------------------
@@ -133,7 +132,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     dc.onclose = () => setStatus("Data channel closed.");
     dc.onerror = (err) => setStatus(`Data channel error: ${err}`);
 
-    dc.onmessage = (evt) => {
+    dc.onmessage = async (evt) => {
       try {
         if (typeof evt.data === "string") {
           const meta = JSON.parse(evt.data) as FileMeta;
@@ -142,8 +141,15 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
           incomingBuffer.current.streamParts = [];
         } else if (incomingBuffer.current.meta) {
           const chunk = evt.data as ArrayBuffer;
-          incomingBuffer.current.streamParts.push(chunk);
+          incomingBuffer.current.streamParts.push(new Blob([chunk]));
           incomingBuffer.current.receivedBytes += chunk.byteLength;
+
+          setStatus(
+            `Receiving ${incomingBuffer.current.meta.fileName} (${(
+              (incomingBuffer.current.receivedBytes / incomingBuffer.current.meta.size) *
+              100
+            ).toFixed(1)}%)`
+          );
 
           if (incomingBuffer.current.receivedBytes >= incomingBuffer.current.meta.size) {
             const blob = new Blob(incomingBuffer.current.streamParts, { type: incomingBuffer.current.meta.mime });
@@ -152,50 +158,30 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
             incomingBuffer.current.meta = undefined;
             incomingBuffer.current.receivedBytes = 0;
             incomingBuffer.current.streamParts = [];
-          } else if (incomingBuffer.current.receivedBytes % (5 * 1024 * 1024) < chunk.byteLength) {
-            setStatus(`Receiving ${incomingBuffer.current.meta.fileName} (${((incomingBuffer.current.receivedBytes / incomingBuffer.current.meta.size) * 100).toFixed(1)}%)`);
           }
         }
-      } catch {
+      } catch (err) {
+        console.error("Receiving error:", err);
         setStatus("Error receiving file.");
       }
     };
   };
 
   // ----------------------------
-  // Setup PeerConnection with TURN
+  // Setup PeerConnection
   // ----------------------------
   const setupConnection = (isInitiator = false) => {
     if (pcRef.current) return;
 
     const pc = new RTCPeerConnection({
       iceServers: [
-        {
-          urls: "stun:stun.relay.metered.ca:80",
-        },
-        {
-          urls: "turn:standard.relay.metered.ca:80",
-          username: "158b5b4008675d9b88b4ba97",
-          credential: "plP3KoFPyI4pLx7e",
-        },
-        {
-          urls: "turn:standard.relay.metered.ca:80?transport=tcp",
-          username: "158b5b4008675d9b88b4ba97",
-          credential: "plP3KoFPyI4pLx7e",
-        },
-        {
-          urls: "turn:standard.relay.metered.ca:443",
-          username: "158b5b4008675d9b88b4ba97",
-          credential: "plP3KoFPyI4pLx7e",
-        },
-        {
-          urls: "turns:standard.relay.metered.ca:443?transport=tcp",
-          username: "158b5b4008675d9b88b4ba97",
-          credential: "plP3KoFPyI4pLx7e",
-        },
+        { urls: "stun:stun.relay.metered.ca:80" },
+        { urls: "turn:standard.relay.metered.ca:80", username: "158b5b4008675d9b88b4ba97", credential: "plP3KoFPyI4pLx7e" },
+        { urls: "turn:standard.relay.metered.ca:80?transport=tcp", username: "158b5b4008675d9b88b4ba97", credential: "plP3KoFPyI4pLx7e" },
+        { urls: "turn:standard.relay.metered.ca:443", username: "158b5b4008675d9b88b4ba97", credential: "plP3KoFPyI4pLx7e" },
+        { urls: "turns:standard.relay.metered.ca:443?transport=tcp", username: "158b5b4008675d9b88b4ba97", credential: "plP3KoFPyI4pLx7e" },
       ],
     });
-
 
     pcRef.current = pc;
 
@@ -228,7 +214,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   };
 
   const handleSignal = async (msg: any) => {
-    const { type, data, from } = msg;
+    const { type, data } = msg;
     setupConnection(false);
     const pc = pcRef.current!;
     try {
@@ -246,13 +232,16 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   };
 
   // ----------------------------
-  // File handling
+  // File sending
   // ----------------------------
   const addFilesToQueue = (files: FileList) => setPreSendFiles((prev) => [...prev, ...Array.from(files)]);
   const removeFromQueue = (index: number) => setPreSendFiles((prev) => prev.filter((_, i) => i !== index));
 
   const sendFiles = () => {
-    if (!dcRef.current || dcRef.current.readyState !== "open") { setStatus("Connection not ready for sending files."); return; }
+    if (!dcRef.current || dcRef.current.readyState !== "open") {
+      setStatus("Connection not ready for sending files.");
+      return;
+    }
     pendingFiles.current.push(...preSendFiles);
     setPreSendFiles([]);
     if (!isSending.current) sendNextFile();
@@ -281,13 +270,13 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
           setSendingFiles((prev) => [...prev]);
           setStatus(`Cancelled ${file.name}`);
           broadcastFileCancel(fileId);
-          sendNextFile(); // <-- automatically start next file
+          sendNextFile();
         },
       };
       setSendingFiles((prev) => [...prev, sendingFile]);
 
       const meta: FileMeta = { id: fileId, fileName: file.name, mime: file.type, size: file.size };
-      try { dc.send(JSON.stringify(meta)); } catch { setStatus("Error sending file metadata."); sendingFile.status = "error"; resolve(); return; }
+      try { dc.send(JSON.stringify(meta)); } catch { sendingFile.status = "error"; setStatus("Error sending file metadata."); resolve(); return; }
 
       const reader = new FileReader();
       const readSlice = () => { if (cancelled || offset >= file.size) return; reader.readAsArrayBuffer(file.slice(offset, offset + CHUNK_SIZE)); };
@@ -329,7 +318,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   };
 
   // ----------------------------
-  // UI utility: file icons
+  // File icons
   // ----------------------------
   const getFileIcon = (name?: string) => {
     if (!name) return <PaperClipIcon className="w-6 h-6 text-gray-400" />;
@@ -339,9 +328,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       case "mp4": case "mov": case "avi": case "mkv": return <VideoCameraIcon className="w-6 h-6 text-purple-500" />;
       case "mp3": case "wav": case "flac": return <MusicalNoteIcon className="w-6 h-6 text-green-500" />;
       case "pdf": return <DocumentTextIcon className="w-6 h-6 text-red-500" />;
-      case "doc": case "docx": return <DocumentIcon className="w-6 h-6 text-blue-700" />;
-      case "xls": case "xlsx": return <DocumentIcon className="w-6 h-6 text-green-700" />;
-      case "ppt": case "pptx": return <DocumentIcon className="w-6 h-6 text-orange-500" />;
+      case "doc": case "docx": case "xls": case "xlsx": case "ppt": case "pptx": return <DocumentIcon className="w-6 h-6 text-blue-700" />;
       default: return <PaperClipIcon className="w-6 h-6 text-gray-400" />;
     }
   };
@@ -349,9 +336,9 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   return (
     <div className="w-full min-h-screen flex flex-col bg-gray-100 p-4 sm:p-6 overflow-y-auto">
       {/* Instruction Banner */}
-      <div className="w-full max-w-4xl mx-auto bg-blue-50 border-l-4 border-blue-400 text-blue-900 rounded-lg p-4 shadow-md mb-6 space-y-2 text-sm sm:text-base flex-shrink-0">
-        <p className="font-medium">Welcome to the File Sharing Room</p>
-        <ul className="list-disc ml-5 text-blue-800">
+      <div className="w-full max-w-4xl mx-auto bg-blue-50 border-l-4 border-green-400 text-gray-900 rounded-lg p-4 shadow-md mb-6 space-y-2 text-sm sm:text-base flex-shrink-0">
+        <p className="font-bold text-2xl">Welcome to the Drop Zone</p>
+        <ul className="list-disc ml-5 text-gray-800">
           <li><strong>Role:</strong> If you selected files, you are the <span className="font-semibold">Sender</span>.</li>
           <li><strong>Role:</strong> If you receive files, you are the <span className="font-semibold">Receiver</span>.</li>
           <li>Select files and click <strong>Send Files</strong> to start transferring.</li>
@@ -361,7 +348,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       </div>
 
       {/* Status Banner */}
-      <div className="w-full max-w-4xl mx-auto bg-yellow-50 border-l-4 border-yellow-400 text-yellow-900 rounded-lg p-4 shadow-md mb-6 text-sm sm:text-base flex-shrink-0">
+      <div className="w-full max-w-4xl mx-auto bg-yellow-50 border-l-4 border-green-400 text-gray-900 rounded-lg p-4 shadow-md mb-6 text-sm sm:text-base flex-shrink-0">
         <p className="font-medium truncate">Status: {status}</p>
       </div>
 
@@ -369,8 +356,8 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center min-w-0">
           <div className="min-w-0">
-            <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Room: {roomCode}</h3>
-            <p className="text-xs sm:text-sm text-gray-500 truncate">Peer ID: {peerId}</p>
+            <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Drop zone: {roomCode}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 truncate">Peer code: {peerId}</p>
 
             {connectedPeers.length > 0 && (
               <div className="mt-2">
@@ -394,7 +381,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
             <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFilesToQueue(e.target.files)} />
           </label>
 
-          <button onClick={sendFiles} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition font-medium text-sm sm:text-base">
+          <button onClick={sendFiles} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition font-medium text-sm sm:text-base">
             Send Files
           </button>
 

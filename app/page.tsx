@@ -50,8 +50,8 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section ref={homeRef} className="min-h-screen flex flex-col justify-center items-center bg-gray-50 pt-20 px-4 text-center md:text-left md:px-20">
         <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-4">Fast & Secure File Transfers</h1>
-        <p className="text-gray-600 text-lg md:text-xl max-w-2xl mb-6">
-          Transfer files instantly with minimal setup. No accounts needed, just create a room and start sharing.
+        <p className="text-gray-600 text-lg text-center md:text-xl max-w-2xl mb-6">
+          Transfer files instantly with minimal setup. No accounts needed, just create a drop zone and start sharing.
         </p>
         <div className="flex gap-4 flex-col sm:flex-row justify-center">
           <button
@@ -87,7 +87,7 @@ export default function LandingPage() {
               Our app allows you to transfer files seamlessly between peers without creating an account. It's secure, fast, and simple.
             </p>
             <p className="text-gray-600 text-lg">
-              Perfect for teams, friends, or personal use. You just create a room, share the code, and start transferring files immediately.
+              Perfect for teams, friends, or personal use. You just create a drop zone, share the code, and start transferring files immediately.
             </p>
           </div>
           {/* Placeholder for about image */}
@@ -108,13 +108,13 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
             <div className="w-16 h-16 bg-blue-100 rounded-full mx-auto flex items-center justify-center text-blue-600 font-bold text-xl">1</div>
-            <h3 className="font-semibold text-gray-800">Create a Room</h3>
-            <p className="text-gray-600">Generate a unique room code to start a secure session for file sharing.</p>
+            <h3 className="font-semibold text-gray-800">Create a drop zone</h3>
+            <p className="text-gray-600">Generate a unique drop zone code to start a secure session for file sharing.</p>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
             <div className="w-16 h-16 bg-purple-100 rounded-full mx-auto flex items-center justify-center text-purple-600 font-bold text-xl">2</div>
             <h3 className="font-semibold text-gray-800">Share the Code</h3>
-            <p className="text-gray-600">Send the room code to your peer so they can join and start transferring files.</p>
+            <p className="text-gray-600">Send the drop zone code to your peer so they can join and start transferring files.</p>
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 text-center space-y-4">
             <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center text-green-600 font-bold text-xl">3</div>
