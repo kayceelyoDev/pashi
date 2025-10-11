@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { nanoid } from "nanoid";
 import { saveAs } from "file-saver";
+import { ClipboardIcon, LinkIcon } from "@heroicons/react/24/outline";
 import {
   PhotoIcon,
   VideoCameraIcon,
@@ -42,7 +43,14 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   const [sendingFiles, setSendingFiles] = useState<SendingFile[]>([]);
   const [preSendFiles, setPreSendFiles] = useState<File[]>([]);
   const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
+  const copyRoomCode = () => {
+    navigator.clipboard.writeText(roomCode).then(() => setStatus(`Room code copied to clipboard.`));
+  };
 
+  const getDirectLink = () => {
+    const url = `${window.location.origin}/join-room/${roomCode}`;
+    navigator.clipboard.writeText(url).then(() => setStatus(`Direct link copied to clipboard.`));
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const channelRef = useRef<any>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -352,44 +360,88 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
         <p className="font-medium truncate">Status: {status}</p>
       </div>
 
-      {/* Header & Controls */}
-      <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center min-w-0">
-          <div className="min-w-0">
-            <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Drop zone: {roomCode}</h3>
-            <p className="text-xs sm:text-sm text-gray-500 truncate">Peer code: {peerId}</p>
+{/* Header & Controls */}
+<div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
+  {/* Top Row: Drop Zone, Peer Code & Actions */}
+  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+    {/* Left: Room Info */}
+    <div className="min-w-0 flex-1">
+      <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Drop Zone: {roomCode}</h3>
+      <p className="text-xs sm:text-sm text-gray-500 truncate">Peer Code: {peerId}</p>
 
-            {connectedPeers.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Connected Peers:</p>
-                <div className="flex flex-wrap gap-2">
-                  {connectedPeers.map((peer) => (
-                    <span key={peer} className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm truncate">
-                      {peer}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+      {connectedPeers.length > 0 && (
+        <div className="mt-2">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">Connected Peers:</p>
+          <div className="flex flex-wrap gap-2">
+            {connectedPeers.map((peer) => (
+              <span
+                key={peer}
+                className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs sm:text-sm truncate"
+              >
+                {peer}
+              </span>
+            ))}
           </div>
         </div>
+      )}
+    </div>
 
-        {/* Controls */}
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
-          <label className="flex-1 sm:flex-none flex items-center justify-center text-gray-800 gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition font-medium text-sm sm:text-base">
-            Select Files
-            <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => e.target.files && addFilesToQueue(e.target.files)} />
-          </label>
+    {/* Right: Copy Actions */}
+    <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-0">
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(roomCode);
+          setStatus("Room code copied to clipboard.");
+        }}
+        className="flex items-center gap-1 px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-xs sm:text-sm"
+        title="Copy Room Code"
+      >
+        <ClipboardIcon className="w-4 h-4" /> Copy Code
+      </button>
 
-          <button onClick={sendFiles} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition font-medium text-sm sm:text-base">
-            Send Files
-          </button>
+      <button
+        onClick={() => {
+          const url = `${window.location.origin}/join-room/${roomCode}`;
+          navigator.clipboard.writeText(url);
+          setStatus("Direct join link copied to clipboard.");
+        }}
+        className="flex items-center gap-1 px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition text-xs sm:text-sm"
+        title="Copy Direct Link"
+      >
+        <LinkIcon className="w-4 h-4" /> Copy Link
+      </button>
+    </div>
+  </div>
 
-          <button onClick={leaveRoom} className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition font-medium text-sm sm:text-base">
-            Leave Room
-          </button>
-        </div>
-      </div>
+  {/* File Controls */}
+  <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
+    <label className="flex-1 sm:flex-none flex items-center justify-center text-gray-800 gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition font-medium text-sm sm:text-base">
+      Select Files
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => e.target.files && addFilesToQueue(e.target.files)}
+      />
+    </label>
+
+    <button
+      onClick={sendFiles}
+      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition font-medium text-sm sm:text-base"
+    >
+      Send Files
+    </button>
+
+    <button
+      onClick={leaveRoom}
+      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 sm:py-3 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition font-medium text-sm sm:text-base"
+    >
+      Leave Room
+    </button>
+  </div>
+</div>
+
 
       {/* Files Sections */}
       <div className="flex flex-col mt-4 max-w-4xl mx-auto w-full space-y-4 flex-1">
