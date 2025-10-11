@@ -54,7 +54,7 @@ export default function JoinRoom() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 sm:p-12">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-8 sm:p-12 flex flex-col gap-6 relative">
-        {/* Logo */}
+   
         <div className="flex justify-center mb-4">
           <Image
             src="/logo1.png"
@@ -65,7 +65,7 @@ export default function JoinRoom() {
           />
         </div>
 
-        {/* Heading */}
+   
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 text-center">
           Join an Drop Zone
         </h1>
@@ -73,7 +73,7 @@ export default function JoinRoom() {
           Enter your drop zone code to connect and transfer files securely.
         </p>
 
-        {/* Input */}
+
         <input
           type="text"
           value={code}
@@ -82,14 +82,14 @@ export default function JoinRoom() {
           className="w-full p-3 border text-black border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 mt-4"
         />
 
-        {/* Error Message */}
+
         {error && (
           <p className="text-red-500 text-sm text-center font-medium mt-2">
             {error}
           </p>
         )}
 
-        {/* Action Buttons */}
+
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4">
           <button
             onClick={joinRoom}
@@ -107,7 +107,7 @@ export default function JoinRoom() {
           </button>
         </div>
 
-        {/* Reminders */}
+    
         <div className="mt-6 text-gray-500 text-sm sm:text-base space-y-2">
           <p>• Make sure the drop zone code is correct.</p>
           <p>• Only one user can join a drop zone at a time.</p>
@@ -116,7 +116,7 @@ export default function JoinRoom() {
 
         
 
-        {/* Small Home Link */}
+
         <div className="mt-6 text-center">
           <button
             onClick={() => router.push("/")}

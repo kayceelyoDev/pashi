@@ -16,8 +16,8 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
-const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024; // 16 MB
-const CHUNK_SIZE = 256 * 1024; // 256 KB chunks to prevent mobile crash
+const MAX_BUFFERED_AMOUNT = 16 * 1024 * 1024; 
+const CHUNK_SIZE = 256 * 1024;
 
 type FileMeta = {
   id: string;
@@ -65,9 +65,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
   const pendingFiles = useRef<File[]>([]);
   const isSending = useRef(false);
 
-  // ----------------------------
-  // Setup Supabase channel
-  // ----------------------------
+
   useEffect(() => {
     const channel = supabaseClient.channel(`room-${roomCode}`);
     channelRef.current = channel;
@@ -105,7 +103,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     };
   }, [roomCode, peerId]);
 
-  // Auto-connect when peers exist
+ 
   useEffect(() => {
     if (connectedPeers.length >= 1 && !pcRef.current) {
       setupConnection(true);
@@ -130,9 +128,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     sendNextFile();
   };
 
-  // ----------------------------
-  // Setup DataChannel
-  // ----------------------------
+  
   const setupDataChannelHandlers = (dc: RTCDataChannel) => {
     dc.binaryType = "arraybuffer";
 
@@ -175,9 +171,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     };
   };
 
-  // ----------------------------
-  // Setup PeerConnection
-  // ----------------------------
+
   const setupConnection = (isInitiator = false) => {
     if (pcRef.current) return;
 
@@ -239,9 +233,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     } catch { setStatus("Error establishing connection."); }
   };
 
-  // ----------------------------
-  // File sending
-  // ----------------------------
+
   const addFilesToQueue = (files: FileList) => setPreSendFiles((prev) => [...prev, ...Array.from(files)]);
   const removeFromQueue = (index: number) => setPreSendFiles((prev) => prev.filter((_, i) => i !== index));
 
@@ -317,17 +309,13 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     });
   };
 
-  // ----------------------------
-  // Leave room
-  // ----------------------------
+
   const leaveRoom = () => {
     channelRef.current?.send({ type: "broadcast", event: "peer-left", payload: { peerId } });
     router.push(`/join-room`);
   };
 
-  // ----------------------------
-  // File icons
-  // ----------------------------
+
   const getFileIcon = (name?: string) => {
     if (!name) return <PaperClipIcon className="w-6 h-6 text-gray-400" />;
     const ext = name.split(".").pop()?.toLowerCase();
@@ -343,7 +331,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-gray-100 p-4 sm:p-6 overflow-y-auto">
-      {/* Instruction Banner */}
+    
       <div className="w-full max-w-4xl mx-auto bg-blue-50 border-l-4 border-green-400 text-gray-900 rounded-lg p-4 shadow-md mb-6 space-y-2 text-sm sm:text-base flex-shrink-0">
         <p className="font-bold text-2xl">Welcome to the Drop Zone</p>
         <ul className="list-disc ml-5 text-gray-800">
@@ -355,16 +343,16 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
         </ul>
       </div>
 
-      {/* Status Banner */}
+    
       <div className="w-full max-w-4xl mx-auto bg-yellow-50 border-l-4 border-green-400 text-gray-900 rounded-lg p-4 shadow-md mb-6 text-sm sm:text-base flex-shrink-0">
         <p className="font-medium truncate">Status: {status}</p>
       </div>
 
-{/* Header & Controls */}
+
 <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-4 flex-shrink-0">
-  {/* Top Row: Drop Zone, Peer Code & Actions */}
+
   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-    {/* Left: Room Info */}
+
     <div className="min-w-0 flex-1">
       <h3 className="text-2xl sm:text-3xl font-semibold text-gray-800 truncate">Drop Zone: {roomCode}</h3>
       <p className="text-xs sm:text-sm text-gray-500 truncate">Peer Code: {peerId}</p>
@@ -386,7 +374,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
       )}
     </div>
 
-    {/* Right: Copy Actions */}
+
     <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-0">
       <button
         onClick={() => {
@@ -413,7 +401,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
     </div>
   </div>
 
-  {/* File Controls */}
+
   <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 mt-4 sm:mt-6">
     <label className="flex-1 sm:flex-none flex items-center justify-center text-gray-800 gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition font-medium text-sm sm:text-base">
       Select Files
@@ -443,9 +431,9 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
 </div>
 
 
-      {/* Files Sections */}
+
       <div className="flex flex-col mt-4 max-w-4xl mx-auto w-full space-y-4 flex-1">
-        {/* Pre-send Files */}
+ 
         {preSendFiles.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
             <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Files Ready to Send</h4>
@@ -468,7 +456,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
           </div>
         )}
 
-        {/* Sending Files */}
+
         {sendingFiles.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
             <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Sending Files (Sender)</h4>
@@ -495,7 +483,7 @@ export default function RoomClient({ roomCode }: { roomCode: string }) {
           </div>
         )}
 
-        {/* Received Files */}
+
         {receivedFiles.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 flex flex-col min-h-[200px] max-h-[350px] overflow-y-auto">
             <h4 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Received Files (Receiver)</h4>
