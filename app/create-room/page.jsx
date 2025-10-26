@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Plus, Users, Shield, Zap, ArrowRight, Home, Sparkles } from "lucide-react";
 
 export default function CreateRoom() {
   const router = useRouter();
@@ -33,71 +34,120 @@ export default function CreateRoom() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 sm:p-12">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-8 sm:p-12 flex flex-col gap-6">
+    <div className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="w-full max-w-lg">
         {/* Logo */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-12">
           <Image
             src="/logo1.png"
             alt="PASAHI Logo"
-            width={120}
-            height={120}
+            width={80}
+            height={80}
             className="object-contain"
           />
         </div>
 
-        {/* Heading */}
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-800 text-center">
-          Welcome to PASAHI
-        </h1>
-        <p className="text-gray-500 text-center sm:text-lg">
-          Easily transfer files securely. Create a new drop zone or join an existing one.
-        </p>
+        {/* Main Content */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-light text-black mb-4 tracking-tight">
+            PASAHI
+          </h1>
+          <p className="text-gray-500 text-sm max-w-md mx-auto">
+            Secure file transfer made simple. Create a room or join an existing one to start sharing files instantly.
+          </p>
+        </div>
 
         {/* Status Message */}
         {status && (
-          <div className="p-3 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200 shadow-sm text-center font-medium">
+          <div className="mb-8 p-4 bg-gray-50 text-gray-900 rounded-lg border border-gray-200 text-center text-sm font-medium">
             {status}
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4">
+        <div className="space-y-3 mb-12">
           <button
             onClick={createRoom}
             disabled={loading}
-            className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl shadow hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full group py-4 bg-black text-white font-medium rounded-lg hover:bg-gray-800 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black disabled:active:scale-100"
           >
-            {loading ? "Creating Room..." : "Create drop zone"}
+            <span className="flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Create Room
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </span>
           </button>
 
           <button
             onClick={() => router.push("/join-room")}
-            className="flex-1 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl shadow hover:bg-gray-300 transition"
+            className="w-full py-4 bg-white text-black font-medium rounded-lg hover:bg-gray-50 active:scale-[0.98] transition-all duration-200 border border-gray-300 flex items-center justify-center gap-2"
           >
-            Join drop zone
+            <Users className="w-5 h-5" />
+            Join Room
           </button>
         </div>
 
-        {/* Reminders */}
-        <div className="mt-6 text-gray-500 text-sm sm:text-base space-y-2">
-          <p>• Do not refresh the page while in a drop zone.</p>
-          <p>• Always leave the drop zone after use.</p>
-          <p>• Only one user can occupy a new drop zone initially.</p>
+        {/* Features Grid */}
+        <div className="grid grid-cols-3 gap-4 mb-12">
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <Shield className="w-5 h-5 text-black" />
+            </div>
+            <p className="text-xs text-gray-600">Secure</p>
+          </div>
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-black" />
+            </div>
+            <p className="text-xs text-gray-600">Fast</p>
+          </div>
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <Sparkles className="w-5 h-5 text-black" />
+            </div>
+            <p className="text-xs text-gray-600">Simple</p>
+          </div>
         </div>
 
-       
+        {/* Important Notes */}
+        <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 mb-8">
+          <h3 className="font-medium text-black mb-3 text-sm">Important Notes</h3>
+          <ul className="space-y-2 text-sm text-gray-600">
+            <li className="flex items-start gap-2">
+              <span className="text-black mt-0.5">•</span>
+              <span>Do not refresh the page while in a room</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-black mt-0.5">•</span>
+              <span>Always leave the room after use</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-black mt-0.5">•</span>
+              <span>Only one user can occupy a new room initially</span>
+            </li>
+          </ul>
+        </div>
 
-         <div className="mt-6 text-center">
+        {/* Footer */}
+        <div className="text-center">
           <button
             onClick={() => router.push("/")}
-            className="text-sm text-blue-600 hover:underline"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black font-medium transition-colors duration-200"
           >
+            <Home className="w-4 h-4" />
             Back to Home
           </button>
         </div>
       </div>
-      
     </div>
   );
 }
