@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Plus, Users, Shield, Zap, ArrowRight, Home, Sparkles } from "lucide-react";
 
-export default function CreateRoom() {
+function CreateRoomContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const type = searchParams.get("type") || "p2p"; // Default to 'p2p' if not specified
@@ -152,5 +152,17 @@ export default function CreateRoom() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateRoom() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+      </div>
+    }>
+      <CreateRoomContent />
+    </Suspense>
   );
 }
