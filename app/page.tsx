@@ -1,6 +1,22 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
-import { Upload, Shield, Zap, ArrowRight, Menu, X, Check, Share2, Lock, Sparkles, Heart, Star, Send } from "lucide-react";
+import {
+  Upload,
+  Shield,
+  Zap,
+  ArrowRight,
+  Menu,
+  X,
+  Check,
+  Share2,
+  Lock,
+  Sparkles,
+  Heart,
+  Star,
+  Send,
+  Wifi,
+  Globe,
+} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -13,7 +29,9 @@ export default function LandingPage() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [displayedReviews, setDisplayedReviews] = useState<Array<{ name: string; rating: number; review: string }>>([]);
+  const [displayedReviews, setDisplayedReviews] = useState<
+    Array<{ name: string; rating: number; review: string }>
+  >([]);
 
   const homeRef = useRef<HTMLDivElement>(null);
   const aboutRef = useRef<HTMLDivElement>(null);
@@ -22,26 +40,125 @@ export default function LandingPage() {
 
   // Real Filipino names and genuine reviews
   const reviewsData = [
-    { name: "Miguel Santos", rating: 5, review: "PASAHI made file sharing so easy! No more email attachments or complicated cloud storage setups." },
-    { name: "Sofia Reyes", rating: 5, review: "Fast, secure, and incredibly simple. This is exactly what I needed for quick file transfers!" },
-    { name: "Carlos Mendoza", rating: 4, review: "Great service! Works perfectly for sharing large files with my team." },
-    { name: "Isabella Garcia", rating: 5, review: "I love how I don't need to create an account. Just share the code and transfer files instantly!" },
-    { name: "Rafael Cruz", rating: 5, review: "The speed is incredible! Transferred 2GB in just minutes. Highly recommend!" },
-    { name: "Luna Fernandez", rating: 4, review: "Very convenient for quick file sharing. The interface is clean and easy to use." },
-    { name: "Diego Torres", rating: 5, review: "Best file transfer tool I've used. Simple, fast, and secure. Perfect for work!" },
-    { name: "Gabriela Ramos", rating: 5, review: "No sign-up required is a game changer. I can share files with clients instantly!" },
-    { name: "Antonio Lopez", rating: 4, review: "Excellent tool for sharing large video files. Much better than other services." },
-    { name: "Valentina Morales", rating: 5, review: "Super easy to use! Shared a 1GB presentation with my team in seconds." },
-    { name: "Lucas Diaz", rating: 5, review: "The security features give me peace of mind. Great for sensitive documents!" },
-    { name: "Camila Herrera", rating: 4, review: "Clean interface and fast transfers. Exactly what I was looking for!" },
-    { name: "Mateo Rivera", rating: 5, review: "Finally, a file sharing service that just works! No hassle, no complications." },
-    { name: "Emma Castillo", rating: 5, review: "I use this daily for work. Reliable, fast, and secure. Couldn't ask for more!" },
-    { name: "Sebastian Flores", rating: 4, review: "Great for quick file sharing. The room code system is genius!" },
-    { name: "Olivia Gomez", rating: 5, review: "Perfect for collaboration! My team loves how easy it is to share files." },
-    { name: "Daniel Martinez", rating: 5, review: "No more file size limits! This is perfect for sharing large design files." },
-    { name: "Mia Rodriguez", rating: 4, review: "Simple and effective. Does exactly what it promises without any fuss." },
-    { name: "Adrian Perez", rating: 5, review: "The best part? No registration! Just create a room and start sharing." },
-    { name: "Zoe Silva", rating: 5, review: "Fast, secure, and user-friendly. This is now my go-to file sharing tool!" }
+    {
+      name: "Miguel Santos",
+      rating: 5,
+      review:
+        "PASAHI made file sharing so easy! No more email attachments or complicated cloud storage setups.",
+    },
+    {
+      name: "Sofia Reyes",
+      rating: 5,
+      review:
+        "Fast, secure, and incredibly simple. This is exactly what I needed for quick file transfers!",
+    },
+    {
+      name: "Carlos Mendoza",
+      rating: 4,
+      review:
+        "Great service! Works perfectly for sharing large files with my team.",
+    },
+    {
+      name: "Isabella Garcia",
+      rating: 5,
+      review:
+        "I love how I don't need to create an account. Just share the code and transfer files instantly!",
+    },
+    {
+      name: "Rafael Cruz",
+      rating: 5,
+      review:
+        "The speed is incredible! Transferred 2GB in just minutes. Highly recommend!",
+    },
+    {
+      name: "Luna Fernandez",
+      rating: 4,
+      review:
+        "Very convenient for quick file sharing. The interface is clean and easy to use.",
+    },
+    {
+      name: "Diego Torres",
+      rating: 5,
+      review:
+        "Best file transfer tool I've used. Simple, fast, and secure. Perfect for work!",
+    },
+    {
+      name: "Gabriela Ramos",
+      rating: 5,
+      review:
+        "No sign-up required is a game changer. I can share files with clients instantly!",
+    },
+    {
+      name: "Antonio Lopez",
+      rating: 4,
+      review:
+        "Excellent tool for sharing large video files. Much better than other services.",
+    },
+    {
+      name: "Valentina Morales",
+      rating: 5,
+      review:
+        "Super easy to use! Shared a 1GB presentation with my team in seconds.",
+    },
+    {
+      name: "Lucas Diaz",
+      rating: 5,
+      review:
+        "The security features give me peace of mind. Great for sensitive documents!",
+    },
+    {
+      name: "Camila Herrera",
+      rating: 4,
+      review:
+        "Clean interface and fast transfers. Exactly what I was looking for!",
+    },
+    {
+      name: "Mateo Rivera",
+      rating: 5,
+      review:
+        "Finally, a file sharing service that just works! No hassle, no complications.",
+    },
+    {
+      name: "Emma Castillo",
+      rating: 5,
+      review:
+        "I use this daily for work. Reliable, fast, and secure. Couldn't ask for more!",
+    },
+    {
+      name: "Sebastian Flores",
+      rating: 4,
+      review: "Great for quick file sharing. The room code system is genius!",
+    },
+    {
+      name: "Olivia Gomez",
+      rating: 5,
+      review:
+        "Perfect for collaboration! My team loves how easy it is to share files.",
+    },
+    {
+      name: "Daniel Martinez",
+      rating: 5,
+      review:
+        "No more file size limits! This is perfect for sharing large design files.",
+    },
+    {
+      name: "Mia Rodriguez",
+      rating: 4,
+      review:
+        "Simple and effective. Does exactly what it promises without any fuss.",
+    },
+    {
+      name: "Adrian Perez",
+      rating: 5,
+      review:
+        "The best part? No registration! Just create a room and start sharing.",
+    },
+    {
+      name: "Zoe Silva",
+      rating: 5,
+      review:
+        "Fast, secure, and user-friendly. This is now my go-to file sharing tool!",
+    },
   ];
 
   useEffect(() => {
@@ -64,7 +181,7 @@ export default function LandingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!rating || !name.trim() || !message.trim()) {
       return;
     }
@@ -72,7 +189,7 @@ export default function LandingPage() {
     setIsSubmitting(true);
 
     // Simulate sending (you'll add database logic here later)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     setIsSubmitted(true);
     setIsSubmitting(false);
@@ -89,11 +206,16 @@ export default function LandingPage() {
   return (
     <div className="font-sans bg-white">
       {/* Navbar */}
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-sm" : "bg-white"
-      }`}>
+      <nav
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+          scrolled ? "bg-white shadow-sm" : "bg-white"
+        }`}
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between p-4 md:px-8 md:py-5">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => scrollToSection(homeRef)}>
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => scrollToSection(homeRef)}
+          >
             <Image
               src="/logo1.png"
               alt="PASAHI Logo"
@@ -105,19 +227,32 @@ export default function LandingPage() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
-            <button className="text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(homeRef)}>
+            <button
+              className="text-gray-600 hover:text-black transition font-medium"
+              onClick={() => scrollToSection(homeRef)}
+            >
               Home
             </button>
-            <button className="text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(aboutRef)}>
+            <button
+              className="text-gray-600 hover:text-black transition font-medium"
+              onClick={() => scrollToSection(aboutRef)}
+            >
               About
             </button>
-            <button className="text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(stepsRef)}>
+            <button
+              className="text-gray-600 hover:text-black transition font-medium"
+              onClick={() => scrollToSection(stepsRef)}
+            >
               How it Works
             </button>
-            <button className="text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(contactRef)}>
+            <button
+              className="text-gray-600 hover:text-black transition font-medium"
+              onClick={() => scrollToSection(contactRef)}
+            >
               Contact
             </button>
-            <Link href={"/create-room"}
+            <Link
+              href={"/create-room"}
               className="bg-black text-white px-6 py-2.5 rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium"
             >
               Get Started
@@ -129,7 +264,11 @@ export default function LandingPage() {
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
 
@@ -137,19 +276,32 @@ export default function LandingPage() {
         {isMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-200">
             <div className="flex flex-col p-4 space-y-3">
-              <button className="text-left py-2 text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(homeRef)}>
+              <button
+                className="text-left py-2 text-gray-600 hover:text-black transition font-medium"
+                onClick={() => scrollToSection(homeRef)}
+              >
                 Home
               </button>
-              <button className="text-left py-2 text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(aboutRef)}>
+              <button
+                className="text-left py-2 text-gray-600 hover:text-black transition font-medium"
+                onClick={() => scrollToSection(aboutRef)}
+              >
                 About
               </button>
-              <button className="text-left py-2 text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(stepsRef)}>
+              <button
+                className="text-left py-2 text-gray-600 hover:text-black transition font-medium"
+                onClick={() => scrollToSection(stepsRef)}
+              >
                 How it Works
               </button>
-              <button className="text-left py-2 text-gray-600 hover:text-black transition font-medium" onClick={() => scrollToSection(contactRef)}>
+              <button
+                className="text-left py-2 text-gray-600 hover:text-black transition font-medium"
+                onClick={() => scrollToSection(contactRef)}
+              >
                 Contact
               </button>
-              <Link href={"/create-room"}
+              <Link
+                href={"/create-room"}
                 className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition font-medium mt-2 text-center"
               >
                 Get Started
@@ -160,7 +312,10 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section ref={homeRef} className="min-h-screen flex flex-col justify-center items-center bg-white pt-24 pb-20 px-4">
+      <section
+        ref={homeRef}
+        className="min-h-screen flex flex-col justify-center items-center bg-white pt-24 pb-20 px-4"
+      >
         <div className="max-w-6xl mx-auto text-center">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full text-sm font-medium mb-8">
@@ -171,43 +326,65 @@ export default function LandingPage() {
           <h1 className="text-5xl md:text-7xl font-light text-black mb-6 leading-tight tracking-tight">
             Fast & Secure
             <br />
-            <span className="text-gray-600">
-              File Transfers
-            </span>
+            <span className="text-gray-600">File Transfers</span>
           </h1>
 
           <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Transfer files instantly with minimal setup. No accounts needed, just create a room and start sharing securely.
+            Transfer files instantly with minimal setup. No accounts needed,
+            just create a room and start sharing securely.
           </p>
 
-          <div className="flex gap-4 flex-col sm:flex-row justify-center items-center mb-16">
-            <Link href={"/create-room"}
-              className="group bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium flex items-center gap-2"
-            >
-              Start Transferring
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto mb-16">
+            {/* Option 1: Same Network */}
+            <Link href={"/create-room?type=local"} className="group relative bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-black/20 transition-all duration-300 text-left">
+              <div className="absolute top-0 left-0 w-full h-1 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl origin-left"></div>
+              <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-black group-hover:text-white transition-colors duration-300">
+                <Wifi className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-medium text-black mb-2 flex items-center gap-2">
+                Same Network
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Connect devices on the same Wi-Fi for ultra-fast local file transfers.
+              </p>
             </Link>
-            <button
-              onClick={() => scrollToSection(aboutRef)}
-              className="border border-gray-300 px-8 py-4 text-black rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
-            >
-              Learn More
-            </button>
+
+            {/* Option 2: Different Network */}
+            <Link href={"/create-room?type=internet"} className="group relative bg-white p-8 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:border-black/20 transition-all duration-300 text-left">
+              <div className="absolute top-0 left-0 w-full h-1 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-t-2xl origin-left"></div>
+              <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-black group-hover:text-white transition-colors duration-300">
+                <Globe className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-medium text-black mb-2 flex items-center gap-2">
+                Different Network
+                <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+              </h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Share files securely over the internet with anyone, anywhere in the world.
+              </p>
+            </Link>
           </div>
 
           {/* Feature Pills */}
           <div className="flex flex-wrap justify-center gap-4 mb-16">
             <div className="flex items-center gap-2 bg-gray-50 px-5 py-3 rounded-full border border-gray-200">
               <Shield className="w-5 h-5 text-black" />
-              <span className="text-sm font-medium text-gray-700">End-to-End Encrypted</span>
+              <span className="text-sm font-medium text-gray-700">
+                End-to-End Encrypted
+              </span>
             </div>
             <div className="flex items-center gap-2 bg-gray-50 px-5 py-3 rounded-full border border-gray-200">
               <Zap className="w-5 h-5 text-black" />
-              <span className="text-sm font-medium text-gray-700">Lightning Fast</span>
+              <span className="text-sm font-medium text-gray-700">
+                Lightning Fast
+              </span>
             </div>
             <div className="flex items-center gap-2 bg-gray-50 px-5 py-3 rounded-full border border-gray-200">
               <Lock className="w-5 h-5 text-black" />
-              <span className="text-sm font-medium text-gray-700">Private & Secure</span>
+              <span className="text-sm font-medium text-gray-700">
+                Private & Secure
+              </span>
             </div>
           </div>
 
@@ -245,7 +422,8 @@ export default function LandingPage() {
               Why Choose PASAHI?
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              The simplest way to share files securely without the hassle of accounts or complicated setups.
+              The simplest way to share files securely without the hassle of
+              accounts or complicated setups.
             </p>
           </div>
 
@@ -256,9 +434,12 @@ export default function LandingPage() {
                   <Shield className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-medium text-black mb-2">Secure & Private</h3>
+                  <h3 className="text-xl font-medium text-black mb-2">
+                    Secure & Private
+                  </h3>
                   <p className="text-gray-600">
-                    End-to-end encryption ensures your files remain private and secure during transfer.
+                    End-to-end encryption ensures your files remain private and
+                    secure during transfer.
                   </p>
                 </div>
               </div>
@@ -268,9 +449,12 @@ export default function LandingPage() {
                   <Zap className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-medium text-black mb-2">Lightning Fast</h3>
+                  <h3 className="text-xl font-medium text-black mb-2">
+                    Lightning Fast
+                  </h3>
                   <p className="text-gray-600">
-                    Transfer files at maximum speed with real-time progress tracking and instant notifications.
+                    Transfer files at maximum speed with real-time progress
+                    tracking and instant notifications.
                   </p>
                 </div>
               </div>
@@ -280,9 +464,12 @@ export default function LandingPage() {
                   <Upload className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-medium text-black mb-2">No Account Needed</h3>
+                  <h3 className="text-xl font-medium text-black mb-2">
+                    No Account Needed
+                  </h3>
                   <p className="text-gray-600">
-                    Start sharing immediately without sign-ups, logins, or any personal information.
+                    Start sharing immediately without sign-ups, logins, or any
+                    personal information.
                   </p>
                 </div>
               </div>
@@ -314,7 +501,8 @@ export default function LandingPage() {
               How It Works
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Three simple steps to start sharing files securely with anyone, anywhere.
+              Three simple steps to start sharing files securely with anyone,
+              anywhere.
             </p>
           </div>
 
@@ -325,9 +513,12 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-black rounded-xl mx-auto mb-6 flex items-center justify-center text-white font-medium text-2xl group-hover:scale-110 transition-transform duration-300">
                   1
                 </div>
-                <h3 className="font-medium text-xl text-black mb-4 text-center">Create Room</h3>
+                <h3 className="font-medium text-xl text-black mb-4 text-center">
+                  Create Room
+                </h3>
                 <p className="text-gray-600 text-center leading-relaxed">
-                  Generate a unique room code instantly. No setup required, just click and you're ready to go.
+                  Generate a unique room code instantly. No setup required, just
+                  click and you're ready to go.
                 </p>
               </div>
             </div>
@@ -338,9 +529,12 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-gray-700 rounded-xl mx-auto mb-6 flex items-center justify-center text-white font-medium text-2xl group-hover:scale-110 transition-transform duration-300">
                   2
                 </div>
-                <h3 className="font-medium text-xl text-black mb-4 text-center">Share the Code</h3>
+                <h3 className="font-medium text-xl text-black mb-4 text-center">
+                  Share the Code
+                </h3>
                 <p className="text-gray-600 text-center leading-relaxed">
-                  Send the room code to anyone. They can join instantly and securely connect with you.
+                  Send the room code to anyone. They can join instantly and
+                  securely connect with you.
                 </p>
               </div>
             </div>
@@ -351,9 +545,12 @@ export default function LandingPage() {
                 <div className="w-16 h-16 bg-gray-500 rounded-xl mx-auto mb-6 flex items-center justify-center text-white font-medium text-2xl group-hover:scale-110 transition-transform duration-300">
                   3
                 </div>
-                <h3 className="font-medium text-xl text-black mb-4 text-center">Transfer Files</h3>
+                <h3 className="font-medium text-xl text-black mb-4 text-center">
+                  Transfer Files
+                </h3>
                 <p className="text-gray-600 text-center leading-relaxed">
-                  Upload and download files with real-time progress. Fast, secure, and hassle-free.
+                  Upload and download files with real-time progress. Fast,
+                  secure, and hassle-free.
                 </p>
               </div>
             </div>
@@ -361,7 +558,8 @@ export default function LandingPage() {
 
           {/* CTA Button */}
           <div className="text-center mt-16">
-            <Link href={"/create-room"}
+            <Link
+              href={"/create-room"}
               className="group bg-black text-white px-10 py-5 rounded-lg hover:bg-gray-800 transition-all duration-200 font-medium text-lg inline-flex items-center gap-3"
             >
               Try It Now
@@ -379,7 +577,8 @@ export default function LandingPage() {
               Contact Us
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              We'd love to hear from you. Share your feedback or reach out with any questions.
+              We'd love to hear from you. Share your feedback or reach out with
+              any questions.
             </p>
           </div>
 
@@ -408,25 +607,30 @@ export default function LandingPage() {
 
               {/* Reviews Section */}
               <div className="space-y-4">
-                <h3 className="text-xl font-medium text-black mb-4">What Our Users Say</h3>
-                
+                <h3 className="text-xl font-medium text-black mb-4">
+                  What Our Users Say
+                </h3>
+
                 {displayedReviews.map((review, index) => (
-                  <div key={index} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div
+                    key={index}
+                    className="bg-gray-50 p-6 rounded-xl border border-gray-200"
+                  >
                     <div className="flex items-center gap-2 mb-3">
                       {[...Array(5)].map((_, i) => (
-                        <svg 
-                          key={i} 
-                          className={`w-5 h-5 ${i < review.rating ? 'fill-black' : 'fill-gray-300'}`} 
+                        <svg
+                          key={i}
+                          className={`w-5 h-5 ${i < review.rating ? "fill-black" : "fill-gray-300"}`}
                           viewBox="0 0 20 20"
                         >
                           <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                         </svg>
                       ))}
                     </div>
-                    <p className="text-gray-700 mb-3">
-                      "{review.review}"
+                    <p className="text-gray-700 mb-3">"{review.review}"</p>
+                    <p className="text-sm font-medium text-black">
+                      — {review.name}
                     </p>
-                    <p className="text-sm font-medium text-black">— {review.name}</p>
                   </div>
                 ))}
               </div>
@@ -434,8 +638,10 @@ export default function LandingPage() {
 
             {/* Right Side - Feedback Form */}
             <div className="bg-gray-50 p-8 rounded-2xl border border-gray-200">
-              <h3 className="text-2xl font-medium text-black mb-6">Send Us Your Feedback</h3>
-              
+              <h3 className="text-2xl font-medium text-black mb-6">
+                Send Us Your Feedback
+              </h3>
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Rating */}
                 <div>
@@ -548,7 +754,8 @@ export default function LandingPage() {
             &copy; {new Date().getFullYear()} PASAHI. All rights reserved.
           </p>
           <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
-            Made with <Heart className="w-3 h-3 fill-current" /> by kayceelyo_dev
+            Made with <Heart className="w-3 h-3 fill-current" /> by
+            kayceelyo_dev
           </p>
         </div>
       </footer>

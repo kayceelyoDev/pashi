@@ -1,12 +1,15 @@
 "use client";
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Plus, Users, Shield, Zap, ArrowRight, Home, Sparkles } from "lucide-react";
 
 export default function CreateRoom() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const type = searchParams.get("type") || "p2p"; // Default to 'p2p' if not specified
+
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -20,7 +23,7 @@ export default function CreateRoom() {
     try {
       const { error } = await supabaseClient
         .from("rooms")
-        .insert([{ code, expires_at: expiresAt, occupied: false }]);
+        .insert([{ code, expires_at: expiresAt, occupied: false, type }]);
       if (error) throw error;
 
       setStatus(`Room ${code} created successfully! Redirecting...`);
